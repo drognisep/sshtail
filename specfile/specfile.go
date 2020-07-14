@@ -5,7 +5,7 @@ Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
 
-    http://www.apache.org/licenses/LICENSE-2.0
+http://www.apache.org/licenses/LICENSE-2.0
 
 Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,
@@ -27,6 +27,7 @@ import (
 // HostSpec identifies the hostname and port to connect to, as well as the file to tail.
 type HostSpec struct {
 	Hostname string `json:"hostname" yaml:"hostname"`
+	Username string `json:"username" yaml:"username"`
 	File     string `json:"file" yaml:"file"`
 	Port     int    `json:"port" yaml:"port"`
 }
@@ -54,11 +55,13 @@ func NewSpecTemplate(config *SpecTemplateConfig) (string, error) {
 {{end}}hosts:
   host1:
     hostname: remote-host-1
-    file: /var/log/syslog
+    {{if .WithComments}}# Excluding the username here will default it to the current user name
+    {{end}}file: /var/log/syslog
     {{if .WithComments}}# Default SSH port
     {{end}}port: 22
   host2:
     hostname: remote-host-2
+    username: me
     file: /var/log/syslog
     port: 22
 {{if not .ExcludeKeys}}{{if .WithComments}}# This section is optional for portability

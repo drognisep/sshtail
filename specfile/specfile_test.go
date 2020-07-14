@@ -24,8 +24,8 @@ import (
 
 var hostAndKeysData SpecData = SpecData{
 	map[string]HostSpec{
-		"host1": HostSpec{"remote-host-1", "/var/log/syslog", 22},
-		"host2": HostSpec{"remote-host-2", "/var/log/syslog", 22},
+		"host1": HostSpec{"remote-host-1", "", "/var/log/syslog", 22},
+		"host2": HostSpec{"remote-host-2", "me", "/var/log/syslog", 22},
 	},
 	map[string]KeySpec{
 		"host1": KeySpec{"~/.ssh/id_rsa"},
@@ -40,6 +40,7 @@ const defaultSpecText string = `hosts:
     port: 22
   host2:
     hostname: remote-host-2
+    username: me
     file: /var/log/syslog
     port: 22
 keys:
@@ -51,8 +52,8 @@ keys:
 
 var commentHostAndKeysData SpecData = SpecData{
 	map[string]HostSpec{
-		"host1": HostSpec{"remote-host-1", "/var/log/syslog", 22},
-		"host2": HostSpec{"remote-host-2", "/var/log/syslog", 22},
+		"host1": HostSpec{"remote-host-1", "", "/var/log/syslog", 22},
+		"host2": HostSpec{"remote-host-2", "me", "/var/log/syslog", 22},
 	},
 	map[string]KeySpec{
 		"host1": KeySpec{"~/.ssh/id_rsa"},
@@ -64,11 +65,13 @@ const commentSpecText string = `# Hosts and files to tail
 hosts:
   host1:
     hostname: remote-host-1
+    # Excluding the username here will default it to the current user name
     file: /var/log/syslog
     # Default SSH port
     port: 22
   host2:
     hostname: remote-host-2
+    username: me
     file: /var/log/syslog
     port: 22
 # This section is optional for portability
@@ -83,8 +86,8 @@ keys:
 
 var hostData SpecData = SpecData{
 	map[string]HostSpec{
-		"host1": HostSpec{"remote-host-1", "/var/log/syslog", 22},
-		"host2": HostSpec{"remote-host-2", "/var/log/syslog", 22},
+		"host1": HostSpec{"remote-host-1", "", "/var/log/syslog", 22},
+		"host2": HostSpec{"remote-host-2", "me", "/var/log/syslog", 22},
 	},
 	nil,
 }
@@ -96,6 +99,7 @@ const noKeysSpecText string = `hosts:
     port: 22
   host2:
     hostname: remote-host-2
+    username: me
     file: /var/log/syslog
     port: 22
 `
