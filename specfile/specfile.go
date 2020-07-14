@@ -17,12 +17,22 @@ package specfile
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"html/template"
 	"io/ioutil"
+	"os/user"
+	"path"
 
 	"gopkg.in/yaml.v3"
 )
+
+const DEFAULT_SSH_PORT int = 22
+
+func defaultSSHKeyPath() string {
+	u, _ := user.Current()
+	return path.Join(u.HomeDir, ".ssh", "id_rsa")
+}
 
 // HostSpec identifies the hostname and port to connect to, as well as the file to tail.
 type HostSpec struct {
@@ -32,15 +42,81 @@ type HostSpec struct {
 	Port     int    `json:"port" yaml:"port"`
 }
 
+// Validate checks the HostSpec for errors and sets reasonable defaults.
+func (h *HostSpec) Validate() error {
+	if h.Hostname == "" {
+		return errors.New("Host spec cannot have a blank hostname")
+	}
+	if h.Username == "" {
+		u, err := user.Current()
+		if err != nil {
+			// May need to check for sudo user on linux. Not going to support
+			// edge cases like this initially.
+			return errors.New("Unable to determine current user")
+		}
+		h.Username = u.Username
+	}
+	if h.File == "" {
+		return errors.New("Host spec cannot have a blank file")
+	}
+	if h.Port == 0 {
+		h.Port = DEFAULT_SSH_PORT
+	}
+	return nil
+}
+
 // KeySpec specifies the path to the SSH key to be used for the host named by the SpecData.Keys map key.
 type KeySpec struct {
 	Path string `json:"path" yaml:"path"`
+}
+
+// Validate checks the KeySpec for errors and sets reasonable defaults.
+func (k *KeySpec) Validate() error {
+	if k.Path == "" {
+		k.Path = defaultSSHKeyPath()
+	}
+	return nil
 }
 
 // SpecData encapsulates runtime parameters for SSH tailing.
 type SpecData struct {
 	Hosts map[string]HostSpec `json:"hosts" yaml:"hosts"`
 	Keys  map[string]KeySpec  `json:"keys" yaml:"keys"`
+}
+
+// Validate checks the SpecData for errors and sets reasonable defaults.
+func (s *SpecData) Validate() error {
+	if s.Hosts == nil || len(s.Hosts) == 0 {
+		return errors.New("Host spec must have at least one definition")
+	}
+	for k, v := range s.Hosts {
+		err := v.Validate()
+		if err != nil {
+			return fmt.Errorf("Host spec %s: %v", k, err)
+		}
+	}
+	if s.Keys != nil && len(s.Keys) > 0 {
+		for k, v := range s.Keys {
+			err := v.Validate()
+			if err != nil {
+				return fmt.Errorf("Key spec %s: %v", k, err)
+			}
+		}
+	} else {
+		s.Keys = map[string]KeySpec{}
+	}
+
+	hostsLen := len(s.Hosts)
+	keysLen := 0
+	if s.Keys != nil {
+		keysLen = len(s.Keys)
+	}
+
+	if keysLen != 0 && hostsLen != keysLen {
+		fmt.Println("Warning: The number of host entries does not match the number of keys entries")
+	}
+
+	return nil
 }
 
 // SpecTemplateConfig config

@@ -227,3 +227,39 @@ func TestReadHostOnly(t *testing.T) {
 		t.Errorf("Got:\n%s\nWant:\n%s\n", got, want)
 	}
 }
+
+func TestValidateHost(t *testing.T) {
+	errorList := []HostSpec{
+		HostSpec{"", "me", "file", 22}, // No host
+		HostSpec{"host", "me", "", 22}, // No file
+	}
+
+	for i, h := range errorList {
+		err := h.Validate()
+		if err == nil {
+			t.Errorf("'errorList[%d]' should not have passed validation", i)
+		}
+	}
+}
+
+func TestValueDefaultHost(t *testing.T) {
+	missingUser := HostSpec{"host", "", "file", 22}
+	missingPort := HostSpec{"host", "me", "file", 0}
+	var err error
+
+	err = missingUser.Validate()
+	if err != nil {
+		t.Errorf("Should not have received error for missing username: %v", err)
+	}
+	if missingUser.Username == "" {
+		t.Error("Username was not defaulted")
+	}
+
+	err = missingPort.Validate()
+	if err != nil {
+		t.Errorf("Should not have received error for missing port: %v", err)
+	}
+	if missingPort.Port != DEFAULT_SSH_PORT {
+		t.Error("Default port was not set")
+	}
+}
