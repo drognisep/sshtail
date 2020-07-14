@@ -19,30 +19,27 @@ import (
 	"bytes"
 	"fmt"
 	"html/template"
-	"path/filepath"
-	"strings"
+	"io/ioutil"
 
-	"github.com/spf13/viper"
+	"gopkg.in/yaml.v3"
 )
-
-const suffix = ".yml"
 
 // HostSpec identifies the hostname and port to connect to, as well as the file to tail.
 type HostSpec struct {
-	Hostname string `json:"hostname"`
-	File     string `json:"file"`
-	Port     int    `json:"port"`
+	Hostname string `json:"hostname" yaml:"hostname"`
+	File     string `json:"file" yaml:"file"`
+	Port     int    `json:"port" yaml:"port"`
 }
 
 // KeySpec specifies the path to the SSH key to be used for the host named by the SpecData.Keys map key.
 type KeySpec struct {
-	Path string `json:"path"`
+	Path string `json:"path" yaml:"path"`
 }
 
 // SpecData encapsulates runtime parameters for SSH tailing.
 type SpecData struct {
-	Hosts map[string]HostSpec `json:"hosts"`
-	Keys  map[string]KeySpec  `json:"keys"`
+	Hosts map[string]HostSpec `json:"hosts" yaml:"hosts"`
+	Keys  map[string]KeySpec  `json:"keys" yaml:"keys"`
 }
 
 // SpecTemplateConfig config
@@ -87,24 +84,16 @@ func NewSpecTemplate(config *SpecTemplateConfig) (string, error) {
 
 // ReadSpecFile attempts to read SpecData from the specified file.
 func ReadSpecFile(filename string) (*SpecData, error) {
-	d, f := filepath.Split(filename)
-	if d == "" {
-		d = "."
-	}
-	viper.AddConfigPath(d)
-	viper.SetConfigName(strings.TrimSuffix(f, suffix))
-	viper.SetConfigType("yaml")
-
-	var err error
-	err = viper.ReadInConfig()
+	data, err := ioutil.ReadFile(filename)
 	if err != nil {
-		return nil, fmt.Errorf("Unable to read %s: %v", filename, err)
+		return nil, err
 	}
 
-	data := &SpecData{}
-	err = viper.Unmarshal(data)
+	specData := &SpecData{}
+	err = yaml.Unmarshal(data, specData)
 	if err != nil {
-		return nil, fmt.Errorf("Unable to unmarshal config to SpecData instance: %v", err)
+		return nil, err
 	}
-	return data, nil
+
+	return specData, nil
 }
