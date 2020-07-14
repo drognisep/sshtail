@@ -18,17 +18,24 @@ package cmd
 import (
 	"fmt"
 
+	"github.com/drognisep/sshtail/specfile"
 	"github.com/spf13/cobra"
 )
 
 // runCmd represents the run command
 var runCmd = &cobra.Command{
 	Use:   "run",
+	Args:  cobra.ExactArgs(1),
 	Short: "Runs a spec file to connect to multiple hosts and tail the files specified",
 	Long: `Spec files have the extension .spec. A template can be created with
 	sshtail spec init your-spec-name-here`,
-	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("run called")
+	RunE: func(cmd *cobra.Command, args []string) error {
+		specData, err := specfile.ReadSpecFile(args[0])
+		if err != nil {
+			return fmt.Errorf("Unable to parse config file: %s", args[0])
+		}
+		fmt.Printf("Read spec data: %v\n", *specData)
+		return nil
 	},
 }
 
