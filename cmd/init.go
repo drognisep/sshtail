@@ -43,10 +43,13 @@ func specTemplate(config *templateConfig) (string, error) {
 {{end}}hosts:
   host1:
     hostname: remote-host-1
-    file: /var/log/syslog
+	file: /var/log/syslog
+	{{if .WithComments}}# Default SSH port{{end}}
+	port: 22
   host2:
     hostname: remote-host-2
-    file: /var/log/syslog
+	file: /var/log/syslog
+	port: 22
 {{if not .ExcludeKeys}}{{if .WithComments}}# This section is optional for portability
 {{end}}keys:
   host1:
