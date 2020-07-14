@@ -29,7 +29,7 @@ import (
 
 const DEFAULT_SSH_PORT int = 22
 
-func defaultSSHKeyPath() string {
+func DefaultSSHKeyPath() string {
 	u, _ := user.Current()
 	return path.Join(u.HomeDir, ".ssh", "id_rsa")
 }
@@ -73,7 +73,7 @@ type KeySpec struct {
 // Validate checks the KeySpec for errors and sets reasonable defaults.
 func (k *KeySpec) Validate() error {
 	if k.Path == "" {
-		k.Path = defaultSSHKeyPath()
+		k.Path = DefaultSSHKeyPath()
 	}
 	return nil
 }
@@ -89,12 +89,6 @@ func (s *SpecData) Validate() error {
 	if s.Hosts == nil || len(s.Hosts) == 0 {
 		return errors.New("Host spec must have at least one definition")
 	}
-	for k, v := range s.Hosts {
-		err := v.Validate()
-		if err != nil {
-			return fmt.Errorf("Host spec %s: %v", k, err)
-		}
-	}
 	if s.Keys != nil && len(s.Keys) > 0 {
 		for k, v := range s.Keys {
 			err := v.Validate()
@@ -104,6 +98,17 @@ func (s *SpecData) Validate() error {
 		}
 	} else {
 		s.Keys = map[string]KeySpec{}
+	}
+
+	for k, v := range s.Hosts {
+		err := v.Validate()
+		if err != nil {
+			return fmt.Errorf("Host spec %s: %v", k, err)
+		}
+		_, found := s.Keys[k]
+		if !found {
+			s.Keys[k] = KeySpec{DefaultSSHKeyPath()}
+		}
 	}
 
 	hostsLen := len(s.Hosts)

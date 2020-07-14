@@ -263,3 +263,22 @@ func TestValueDefaultHost(t *testing.T) {
 		t.Error("Default port was not set")
 	}
 }
+
+func TestDefaultKeysAdded(t *testing.T) {
+	spec := SpecData{
+		Hosts: map[string]HostSpec{
+			"host1": HostSpec{"host", "me", "file", 22},
+			"host2": HostSpec{"host", "me", "file", 22},
+			"host3": HostSpec{"host", "me", "file", 22},
+		},
+		Keys: nil,
+	}
+	err := spec.Validate()
+	if err != nil {
+		t.Errorf("Spec data didn't validate: %v", err)
+	}
+
+	if spec.Keys == nil || len(spec.Keys) != 3 {
+		t.Errorf("Spec keys were not initialized: %v", spec.Keys)
+	}
+}
