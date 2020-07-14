@@ -16,7 +16,7 @@ limitations under the License.
 package cmd
 
 import (
-	"fmt"
+	"errors"
 
 	"github.com/spf13/cobra"
 )
@@ -27,8 +27,8 @@ var specCmd = &cobra.Command{
 	Short: "Root command for operations involving spec files",
 	Long: `Spec files (*.spec) are used to store information about multiple hosts, what
 files to tail, and optionally what keys to use to connect with the server.`,
-	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("spec called")
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return errors.New("Must specify additional commands")
 	},
 }
 

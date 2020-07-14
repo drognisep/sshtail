@@ -29,31 +29,30 @@ var withComments bool
 var excludeKeys bool
 var overwrite bool
 
-const SUFFIX string = ".yml"
+const suffix string = ".yml"
 
 // initCmd represents the init command
 var initCmd = &cobra.Command{
 	Use:   "init",
 	Args:  cobra.ExactArgs(1),
-	Short: "Initializes a spec template (YAML) with the given file name",
+	Short: "Initializes a spec template with the given file name and the .yml suffix added",
 	Long: `This will create a spec file showing what hosts to connect to, what file to
 tail, and what keys to use (keys are optional to promote portability).`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		filename := strings.TrimSuffix(args[0], SUFFIX) + SUFFIX
+		filename := strings.TrimSuffix(args[0], suffix) + suffix
 		fmt.Printf("Creating template spec file '%s'\n", filename)
-		config := &specfile.SpecTemplateConfig{withComments, excludeKeys}
+		config := &specfile.SpecTemplateConfig{WithComments: withComments, ExcludeKeys: excludeKeys}
 		text, err := specfile.NewSpecTemplate(config)
 		if err != nil {
 			return err
 		}
-		// fmt.Printf("Generated template:\n%s", text)
 		if overwrite == false {
 			_, err = os.Stat(filename)
 			if err == nil {
 				var response string
 				fmt.Printf("The file already exists, do you want to replace it (Y/N)? ")
 				fmt.Scanf("%s\n", &response)
-				response = strings.ToLower(response)
+				response = strings.TrimSpace(strings.ToLower(response))
 				switch response {
 				case "yes":
 				case "y":
