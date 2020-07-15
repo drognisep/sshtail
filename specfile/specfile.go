@@ -29,6 +29,7 @@ import (
 
 const DEFAULT_SSH_PORT int = 22
 
+// DefaultSSHKeyPath returns the default path of ~/.ssh/id_rsa
 func DefaultSSHKeyPath() string {
 	u, _ := user.Current()
 	return path.Join(u.HomeDir, ".ssh", "id_rsa")

@@ -17,6 +17,7 @@ package cmd
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/drognisep/sshtail/specfile"
 	"github.com/spf13/cobra"
@@ -34,7 +35,11 @@ var runCmd = &cobra.Command{
 		if err != nil {
 			return fmt.Errorf("Unable to parse config file: %s", args[0])
 		}
-		fmt.Printf("Read spec data: %v\n", *specData)
+		writer, err := specfile.NewConsolidatedWriter(specData, os.Stdout)
+		if err != nil {
+			return err
+		}
+		writer.Start()
 		return nil
 	},
 }
