@@ -17,6 +17,12 @@ package cmd
 
 import (
 	"fmt"
+	"io/ioutil"
+	"os/user"
+	"path"
+
+	"github.com/drognisep/sshtail/specfile"
+	"gopkg.in/yaml.v3"
 
 	"github.com/spf13/cobra"
 )
@@ -24,6 +30,7 @@ import (
 // usekeyCmd represents the usekey command
 var usekeyCmd = &cobra.Command{
 	Use:   "usekey",
+	Args:  cobra.ExactArgs(1),
 	Short: "Specifies the default SSH key",
 	Long: `This is useful for situations where the same SSH key is used to connect to
 multiple nodes in a cluster.
@@ -31,8 +38,24 @@ multiple nodes in a cluster.
 Instead of specifying the same key multiple times, the default key can be used
 for all of them. The default key path will be saved to your config file for
 later use.`,
-	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("usekey called")
+	RunE: func(cmd *cobra.Command, args []string) error {
+		config, err := specfile.ConfigFile()
+		if err != nil {
+			return fmt.Errorf("Unable to open config file: %v", err)
+		}
+
+		config.DefaultKey = specfile.KeySpec{Path: args[0]}
+
+		newConfig, err := yaml.Marshal(config)
+		if err != nil {
+			return fmt.Errorf("Internal error: %v", err)
+		}
+		u, _ := user.Current()
+		err = ioutil.WriteFile(path.Join(u.HomeDir, ".sshtail.yaml"), newConfig, 0644)
+		if err != nil {
+			return err
+		}
+		return nil
 	},
 }
 
