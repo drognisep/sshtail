@@ -21,20 +21,39 @@ import (
 	"io/ioutil"
 	"os"
 	"strings"
+	"syscall"
 
 	"golang.org/x/crypto/ssh"
+	"golang.org/x/crypto/ssh/terminal"
 )
 
 func noOpBanner(message string) error { return nil }
 
-func publicKey(path string) (ssh.AuthMethod, error) {
+// LoadKey reads a key from file
+func LoadKey(path string) (ssh.AuthMethod, error) {
 	key, err := ioutil.ReadFile(path)
 	if err != nil {
 		return nil, err
 	}
 	signer, err := ssh.ParsePrivateKey(key)
 	if err != nil {
-		return nil, err
+		_, ok := err.(*ssh.PassphraseMissingError)
+		if ok {
+			fmt.Printf("Key %s requires a passphrase\n", path)
+			fmt.Printf("Enter passphrase: ")
+			passwd, err := terminal.ReadPassword(int(syscall.Stdin))
+			if err != nil {
+				return nil, fmt.Errorf("Failed to read password: %v", err)
+			}
+			signer, err = ssh.ParsePrivateKeyWithPassphrase(key, passwd)
+			if err != nil {
+				return nil, fmt.Errorf("Failed to decrypt key")
+			} else {
+				fmt.Println("Key decrypted")
+			}
+		} else {
+			return nil, err
+		}
 	}
 	return ssh.PublicKeys(signer), nil
 }
@@ -55,7 +74,7 @@ func setupClients(specData *SpecData) ([]*ClientFilePair, error) {
 	}
 	i := 0
 	for k, v := range specData.Hosts {
-		authMethod, err := publicKey(specData.Keys[k].Path)
+		authMethod, err := LoadKey(specData.Keys[k].Path)
 		if err != nil {
 			return nil, fmt.Errorf("Failed to load key from %s: %v", specData.Keys[k].Path, err)
 		}

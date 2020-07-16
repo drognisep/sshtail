@@ -29,12 +29,6 @@ import (
 
 const DEFAULT_SSH_PORT int = 22
 
-// DefaultSSHKeyPath returns the default path of ~/.ssh/id_rsa
-func DefaultSSHKeyPath() string {
-	u, _ := user.Current()
-	return path.Join(u.HomeDir, ".ssh", "id_rsa")
-}
-
 // HostSpec identifies the hostname and port to connect to, as well as the file to tail.
 type HostSpec struct {
 	Hostname string `json:"hostname" yaml:"hostname"`
@@ -123,6 +117,44 @@ func (s *SpecData) Validate() error {
 	}
 
 	return nil
+}
+
+// ConfigFileData is the format for the home config file.
+type ConfigFileData struct {
+	DefaultKey KeySpec `json:"defaultKey" yaml:"defaultKey"`
+}
+
+func defaultSSHKeyPath() string {
+	u, _ := user.Current()
+	return path.Join(u.HomeDir, ".ssh", "id_rsa")
+}
+
+// DefaultSSHKeyPath returns the config specified value or the default path of ~/.ssh/id_rsa
+func DefaultSSHKeyPath() string {
+	var ks KeySpec
+	c, err := ConfigFile()
+	if err != nil || c == nil || c.DefaultKey == ks {
+		ks = KeySpec{defaultSSHKeyPath()}
+	} else {
+		ks = c.DefaultKey
+	}
+	return ks.Path
+}
+
+// ConfigFile reads the default config from the active user's home directory.
+func ConfigFile() (*ConfigFileData, error) {
+	u, _ := user.Current()
+	p := path.Join(u.HomeDir, ".sshtail.yaml")
+	confData, err := ioutil.ReadFile(p)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to read config file: %v", err)
+	}
+	confFileData := &ConfigFileData{}
+	err = yaml.Unmarshal(confData, confFileData)
+	if err != nil {
+		return nil, fmt.Errorf("Config file is not a valid format: %v", err)
+	}
+	return confFileData, nil
 }
 
 // SpecTemplateConfig config
