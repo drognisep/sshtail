@@ -145,7 +145,7 @@ func (s *TailSession) start(ch chan<- string) error {
 		s.session = session
 		session.Stdout = TailChannelWriter{s.clientPair.HostTag, ch}
 		go func() {
-			cmd := fmt.Sprintf("tail -f %s", s.clientPair.File)
+			cmd := fmt.Sprintf("tail -n 0 -f %s", s.clientPair.File)
 			err = session.Run(cmd)
 			if err != nil {
 				fmt.Printf("Error running '%s': %v", cmd, err)
