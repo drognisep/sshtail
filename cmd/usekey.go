@@ -39,9 +39,10 @@ Instead of specifying the same key multiple times, the default key can be used
 for all of them. The default key path will be saved to your config file for
 later use.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		config, err := specfile.ConfigFile()
-		if err != nil {
-			return fmt.Errorf("Unable to open config file: %v", err)
+		config, _ := specfile.ConfigFile()
+		if config == nil {
+			// Failed to read in the file. Could be not created yet.
+			config = &specfile.ConfigFileData{}
 		}
 
 		config.DefaultKey = specfile.KeySpec{Path: args[0]}
