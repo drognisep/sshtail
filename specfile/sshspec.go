@@ -20,7 +20,9 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"os/signal"
 	"strings"
+	"sync"
 	"syscall"
 
 	"golang.org/x/crypto/ssh"
@@ -116,6 +118,7 @@ type TailSession struct {
 	session    *ssh.Session
 	closed     bool
 	started    bool
+	wg         *sync.WaitGroup
 }
 
 // Closed returns whether the tail session has been previously closed. A closed tail session cannot be restarted.
@@ -131,6 +134,7 @@ func (s *TailSession) Started() bool {
 // Close stops the running tail session and disconnects the client.
 func (s *TailSession) Close() (err error) {
 	if !s.closed {
+		fmt.Printf("Closing session to %s\n", s.clientPair.HostTag)
 		s.closed = true
 		sb := strings.Builder{}
 		errorsOccurred := false
@@ -147,12 +151,13 @@ func (s *TailSession) Close() (err error) {
 		if errorsOccurred {
 			err = fmt.Errorf("Error(s) closing tail session: %s", sb.String())
 		}
+		s.wg.Done()
 	}
 	return
 }
 
 // Start the tail session using configured parameters
-func (s *TailSession) start(ch chan<- string) error {
+func (s *TailSession) start(ch chan<- string, wg *sync.WaitGroup) error {
 	if !s.closed {
 		if s.started {
 			return errors.New("Tail session is already started")
@@ -164,11 +169,11 @@ func (s *TailSession) start(ch chan<- string) error {
 		s.session = session
 		session.Stdout = TailChannelWriter{s.clientPair.HostTag, ch}
 		go func() {
+			wg.Add(1)
+			s.wg = wg
 			cmd := fmt.Sprintf("tail -n 0 -f %s", s.clientPair.File)
-			err = session.Run(cmd)
-			if err != nil {
-				fmt.Printf("Error running '%s': %v", cmd, err)
-			}
+			session.Run(cmd)
+			// I don't care that tail will exit ungracefully, not handling or reporting error
 		}()
 		s.started = true
 	} else {
@@ -179,7 +184,7 @@ func (s *TailSession) start(ch chan<- string) error {
 
 // NewTailSession creates a new TailSession instance that is ready to be started.
 func NewTailSession(client *ClientFilePair) (ts *TailSession, err error) {
-	ts = &TailSession{client, nil, false, false}
+	ts = &TailSession{client, nil, false, false, nil}
 	return
 }
 
@@ -225,9 +230,10 @@ func (c *ConsolidatedWriter) Close() error {
 
 // Start starts all tail sessions. In the event of an error, all already opened sessions are closed and an error is returned.
 func (c *ConsolidatedWriter) Start() error {
+	var wg sync.WaitGroup
 	for _, ts := range c.sessions {
 		if !ts.Started() && !ts.Closed() {
-			err := ts.start(c.ch)
+			err := ts.start(c.ch, &wg)
 			if err != nil {
 				fmt.Println("Failed to start consolidated writer. Closing sessions.")
 				c.Close()
@@ -235,8 +241,23 @@ func (c *ConsolidatedWriter) Start() error {
 			}
 		}
 	}
-	for line := range c.ch {
-		c.out.WriteString(line)
-	}
+
+	fmt.Printf("Started tailing, send interrupt signal to exit\n\n")
+	go func() {
+		for line := range c.ch {
+			c.out.WriteString(line)
+		}
+	}()
+
+	sigs := make(chan os.Signal, 1)
+	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
+	go func() {
+		<-sigs
+		fmt.Println("\nSignal received, closing sessions")
+		c.Close()
+	}()
+
+	wg.Wait()
+	fmt.Println("Shut down complete")
 	return nil
 }
