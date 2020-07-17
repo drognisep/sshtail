@@ -23,11 +23,23 @@ import (
 	"io/ioutil"
 	"os/user"
 	"path"
+	"strings"
 
 	"gopkg.in/yaml.v3"
 )
 
 const DEFAULT_SSH_PORT int = 22
+
+func defaultUsername() string {
+	u, err := user.Current()
+	if err != nil {
+		// May need to check for sudo user on linux. Not going to support
+		// edge cases like this initially.
+		fmt.Println("Warning: Unable to determine current user")
+	}
+	split := strings.Split(u.Username, "\\")
+	return split[len(split)-1]
+}
 
 // HostSpec identifies the hostname and port to connect to, as well as the file to tail.
 type HostSpec struct {
@@ -43,13 +55,7 @@ func (h *HostSpec) Validate() error {
 		return errors.New("Host spec cannot have a blank hostname")
 	}
 	if h.Username == "" {
-		u, err := user.Current()
-		if err != nil {
-			// May need to check for sudo user on linux. Not going to support
-			// edge cases like this initially.
-			return errors.New("Unable to determine current user")
-		}
-		h.Username = u.Username
+		h.Username = defaultUsername()
 	}
 	if h.File == "" {
 		return errors.New("Host spec cannot have a blank file")
@@ -75,8 +81,8 @@ func (k *KeySpec) Validate() error {
 
 // SpecData encapsulates runtime parameters for SSH tailing.
 type SpecData struct {
-	Hosts map[string]HostSpec `json:"hosts" yaml:"hosts"`
-	Keys  map[string]KeySpec  `json:"keys" yaml:"keys"`
+	Hosts map[string]*HostSpec `json:"hosts" yaml:"hosts"`
+	Keys  map[string]*KeySpec  `json:"keys" yaml:"keys"`
 }
 
 // Validate checks the SpecData for errors and sets reasonable defaults.
@@ -92,7 +98,14 @@ func (s *SpecData) Validate() error {
 			}
 		}
 	} else {
-		s.Keys = map[string]KeySpec{}
+		s.Keys = map[string]*KeySpec{}
+	}
+
+	hostsLen := len(s.Hosts)
+	keysLen := len(s.Keys)
+
+	if keysLen != 0 && hostsLen != keysLen {
+		fmt.Println("Warning: The number of host entries does not match the number of keys entries")
 	}
 
 	for k, v := range s.Hosts {
@@ -102,18 +115,8 @@ func (s *SpecData) Validate() error {
 		}
 		_, found := s.Keys[k]
 		if !found {
-			s.Keys[k] = KeySpec{DefaultSSHKeyPath()}
+			s.Keys[k] = &KeySpec{DefaultSSHKeyPath()}
 		}
-	}
-
-	hostsLen := len(s.Hosts)
-	keysLen := 0
-	if s.Keys != nil {
-		keysLen = len(s.Keys)
-	}
-
-	if keysLen != 0 && hostsLen != keysLen {
-		fmt.Println("Warning: The number of host entries does not match the number of keys entries")
 	}
 
 	return nil
