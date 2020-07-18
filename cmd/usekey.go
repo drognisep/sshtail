@@ -45,7 +45,13 @@ later use.`,
 			config = &specfile.ConfigFileData{}
 		}
 
-		config.DefaultKey = specfile.KeySpec{Path: args[0]}
+		keyPath := args[0]
+		_, err := specfile.LoadKey(keyPath)
+		if err != nil {
+			return fmt.Errorf("Unable to load %s as a private key: %v", keyPath, err)
+		}
+		fmt.Println("Key is valid, saving to configuration")
+		config.DefaultKey = specfile.KeySpec{Path: keyPath}
 
 		newConfig, err := yaml.Marshal(config)
 		if err != nil {
@@ -56,6 +62,7 @@ later use.`,
 		if err != nil {
 			return err
 		}
+		fmt.Printf("Saved '%s' as the new default key\n", keyPath)
 		return nil
 	},
 }
