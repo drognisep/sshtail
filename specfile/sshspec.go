@@ -21,11 +21,14 @@ import (
 	"io/ioutil"
 	"os"
 	"os/signal"
+	"os/user"
+	"path"
 	"strings"
 	"sync"
 	"syscall"
 
 	"golang.org/x/crypto/ssh"
+	"golang.org/x/crypto/ssh/knownhosts"
 	"golang.org/x/crypto/ssh/terminal"
 )
 
@@ -60,6 +63,16 @@ func LoadKey(path string) (ssh.AuthMethod, error) {
 	return ssh.PublicKeys(signer), nil
 }
 
+func createKnownHostsCallback() (ssh.HostKeyCallback, error) {
+	c, _ := user.Current()
+	knownHostPath := path.Join(c.HomeDir, ".ssh", "known_hosts")
+	knownHostsCallback, err := knownhosts.New(knownHostPath)
+	if err != nil {
+		return nil, fmt.Errorf("Unable to create host key verification callback using '%s': %v", knownHostPath, err)
+	}
+	return knownHostsCallback, nil
+}
+
 type ClientFilePair struct {
 	Client  *ssh.Client
 	HostTag string
@@ -75,6 +88,10 @@ func setupClients(specData *SpecData) ([]*ClientFilePair, error) {
 		return nil, fmt.Errorf("Invalid spec data: %v", err)
 	}
 	i := 0
+	knownHostsCallback, err := createKnownHostsCallback()
+	if err != nil {
+		return nil, err
+	}
 	for k, v := range specData.Hosts {
 		authMethod, err := LoadKey(specData.Keys[k].Path)
 		if err != nil {
@@ -86,7 +103,7 @@ func setupClients(specData *SpecData) ([]*ClientFilePair, error) {
 				authMethod,
 			},
 			BannerCallback:  noOpBanner,
-			HostKeyCallback: ssh.InsecureIgnoreHostKey(),
+			HostKeyCallback: knownHostsCallback,
 		}
 		config.SetDefaults()
 		hostPort := fmt.Sprintf("%s:%d", v.Hostname, v.Port)
