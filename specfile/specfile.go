@@ -206,13 +206,13 @@ func NewSpecTemplate(config *SpecTemplateConfig) (string, error) {
 func ReadSpecFile(filename string) (*SpecData, error) {
 	data, err := ioutil.ReadFile(filename)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("Unable to read '%s': %v", filename, err)
 	}
 
 	specData := &SpecData{}
 	err = yaml.Unmarshal(data, specData)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("Unable to parse YAML file '%s': %v", filename, err)
 	}
 
 	return specData, nil

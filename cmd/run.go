@@ -33,7 +33,7 @@ var runCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		specData, err := specfile.ReadSpecFile(args[0])
 		if err != nil {
-			return fmt.Errorf("Unable to parse config file: %s", args[0])
+			return fmt.Errorf("Unable to parse config file '%s': %v", args[0], err)
 		}
 		writer, err := specfile.NewConsolidatedWriter(specData, os.Stdout)
 		if err != nil {
