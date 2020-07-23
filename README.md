@@ -3,6 +3,8 @@ This is a CLI app that will setup SSH connections to multiple hosts specified in
 
 **Note:** This utility uses the `tail` executable on the remote host to facilitate its base functionality. This limitation is mostly because I haven't figured out any other way yet. PRs welcome!
 
+![Go](https://github.com/drognisep/sshtail/workflows/Go/badge.svg?branch=master)
+
 ## Installation
 It's easy to get started, just run this command!
 ```bash
