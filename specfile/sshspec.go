@@ -73,6 +73,7 @@ func createKnownHostsCallback() (ssh.HostKeyCallback, error) {
 	return knownHostsCallback, nil
 }
 
+// ClientFilePair associates a Client connection with a host tag and file
 type ClientFilePair struct {
 	Client  *ssh.Client
 	HostTag string
@@ -207,11 +208,12 @@ func NewTailSession(client *ClientFilePair) (ts *TailSession, err error) {
 
 // ConsolidatedWriter receives messages from all of its tail session instances and writes them to its output stream.
 type ConsolidatedWriter struct {
-	ch       chan string
-	sessions []*TailSession
-	out      *os.File
-	started  bool
-	closed   bool
+	ch          chan string
+	sessions    []*TailSession
+	out         *os.File
+	started     bool
+	closed      bool
+	outputFiles []*os.File
 }
 
 // NewConsolidatedWriter creates tail sessions that are ready to start and write to the provided writer.
@@ -232,7 +234,17 @@ func NewConsolidatedWriter(specData *SpecData, out *os.File) (*ConsolidatedWrite
 		sessions[i] = ts
 	}
 
-	return &ConsolidatedWriter{ch, sessions, out, false, false}, nil
+	return &ConsolidatedWriter{ch, sessions, out, false, false, []*os.File{}}, nil
+}
+
+// AddOutputFile adds a file to the list of files that should have output appended to them.
+func (c *ConsolidatedWriter) AddOutputFile(file *os.File) error {
+	_, err := file.Stat()
+	if err != nil {
+		return err
+	}
+	c.outputFiles = append(c.outputFiles, file)
+	return nil
 }
 
 // Close closes all tail sessions as well as the connected clients.
@@ -240,6 +252,11 @@ func (c *ConsolidatedWriter) Close() error {
 	for _, ts := range c.sessions {
 		if ts.Started() && !ts.Closed() {
 			ts.Close()
+		}
+	}
+	if len(c.outputFiles) > 0 {
+		for _, f := range c.outputFiles {
+			f.Close()
 		}
 	}
 	return nil
@@ -263,6 +280,12 @@ func (c *ConsolidatedWriter) Start() error {
 	go func() {
 		for line := range c.ch {
 			c.out.WriteString(line)
+			for _, o := range c.outputFiles {
+				_, err := o.WriteString(line)
+				if err != nil {
+					fmt.Printf("[ERROR] Failed to write line to '%s'\n", o.Name())
+				}
+			}
 		}
 	}()
 
