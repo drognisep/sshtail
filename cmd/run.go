@@ -23,6 +23,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var outputFiles []string
+
 // runCmd represents the run command
 var runCmd = &cobra.Command{
 	Use:   "run",
@@ -33,11 +35,18 @@ var runCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		specData, err := specfile.ReadSpecFile(args[0])
 		if err != nil {
-			return fmt.Errorf("Unable to parse config file: %s", args[0])
+			return fmt.Errorf("Unable to parse config file '%s': %v", args[0], err)
 		}
 		writer, err := specfile.NewConsolidatedWriter(specData, os.Stdout)
 		if err != nil {
 			return err
+		}
+		for _, s := range outputFiles {
+			file, err := os.OpenFile(s, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+			if err != nil {
+				return fmt.Errorf("Failed to open and append to file '%s'", s)
+			}
+			writer.AddOutputFile(file)
 		}
 		writer.Start()
 		return nil
@@ -56,4 +65,5 @@ func init() {
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
 	// runCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	runCmd.Flags().StringSliceVarP(&outputFiles, "output", "o", []string{}, "Adds a file to the list of files that should have messages appended")
 }

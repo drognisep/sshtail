@@ -23,13 +23,13 @@ import (
 )
 
 var hostAndKeysData SpecData = SpecData{
-	map[string]HostSpec{
-		"host1": HostSpec{"remote-host-1", "", "/var/log/syslog", 22},
-		"host2": HostSpec{"remote-host-2", "me", "/var/log/syslog", 22},
+	map[string]*HostSpec{
+		"host1": &HostSpec{"remote-host-1", "", "/var/log/syslog", 22},
+		"host2": &HostSpec{"remote-host-2", "me", "/var/log/syslog", 22},
 	},
-	map[string]KeySpec{
-		"host1": KeySpec{"~/.ssh/id_rsa"},
-		"host2": KeySpec{"~/.ssh/id_rsa"},
+	map[string]*KeySpec{
+		"host1": &KeySpec{"~/.ssh/id_rsa"},
+		"host2": &KeySpec{"~/.ssh/id_rsa"},
 	},
 }
 
@@ -51,13 +51,13 @@ keys:
 `
 
 var commentHostAndKeysData SpecData = SpecData{
-	map[string]HostSpec{
-		"host1": HostSpec{"remote-host-1", "", "/var/log/syslog", 22},
-		"host2": HostSpec{"remote-host-2", "me", "/var/log/syslog", 22},
+	map[string]*HostSpec{
+		"host1": &HostSpec{"remote-host-1", "", "/var/log/syslog", 22},
+		"host2": &HostSpec{"remote-host-2", "me", "/var/log/syslog", 22},
 	},
-	map[string]KeySpec{
-		"host1": KeySpec{"~/.ssh/id_rsa"},
-		"host2": KeySpec{"~/.ssh/id_rsa"},
+	map[string]*KeySpec{
+		"host1": &KeySpec{"~/.ssh/id_rsa"},
+		"host2": &KeySpec{"~/.ssh/id_rsa"},
 	},
 }
 
@@ -85,9 +85,9 @@ keys:
 `
 
 var hostData SpecData = SpecData{
-	map[string]HostSpec{
-		"host1": HostSpec{"remote-host-1", "", "/var/log/syslog", 22},
-		"host2": HostSpec{"remote-host-2", "me", "/var/log/syslog", 22},
+	map[string]*HostSpec{
+		"host1": &HostSpec{"remote-host-1", "", "/var/log/syslog", 22},
+		"host2": &HostSpec{"remote-host-2", "me", "/var/log/syslog", 22},
 	},
 	nil,
 }
@@ -266,10 +266,10 @@ func TestValueDefaultHost(t *testing.T) {
 
 func TestDefaultKeysAdded(t *testing.T) {
 	spec := SpecData{
-		Hosts: map[string]HostSpec{
-			"host1": HostSpec{"host", "me", "file", 22},
-			"host2": HostSpec{"host", "me", "file", 22},
-			"host3": HostSpec{"host", "me", "file", 22},
+		Hosts: map[string]*HostSpec{
+			"host1": &HostSpec{"host", "me", "file", 22},
+			"host2": &HostSpec{"host", "me", "file", 22},
+			"host3": &HostSpec{"host", "me", "file", 22},
 		},
 		Keys: nil,
 	}
