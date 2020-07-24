@@ -78,3 +78,7 @@ Finally, to execute a spec use this command. If the configured key is encrypted 
 ```bash
 sshtail spec run <spec file name>
 ```
+
+**Additional Options**
+* `-o <file>`
+  * Using this option will specify an output file to be created if it doesn't exist and appended to with the aggregated output.
