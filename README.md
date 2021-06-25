@@ -6,10 +6,17 @@ This is a CLI app that will setup SSH connections to multiple hosts specified in
 ![Go](https://github.com/drognisep/sshtail/workflows/Go/badge.svg?branch=master)
 
 ## Installation
-It's easy to get started, just run this command!
+If you're [using Go 1.16+](https://blog.golang.org/go116-module-changes), run this.
+```bash
+go install github.com/drognisep/sshtail@latest
+```
+
+Otherwise, just run this command!
 ```bash
 go get github.com/drognisep/sshtail
 ```
+
+You can also download one of the releases directly and put in in a location on your path.
 
 ## Examples
 An example file can be output to "test.yml" by running
@@ -25,7 +32,7 @@ hosts:
     hostname: remote-host-1
     # Excluding the username here will default it to the current user name
     file: /var/log/syslog
-    # Default SSH port
+    # Default SSH port, can be excluded.
     port: 22
   host2:
     hostname: remote-host-2
@@ -35,10 +42,10 @@ hosts:
 # This section is optional for portability
 keys:
   host1:
-    # Defaults to this value
+    # Defaults to this value, can be excluded.
     path: ~/.ssh/id_rsa
   host2:
-    # If all of these values are the same, then 'sshtail usekey' may be more convenient.
+    # If all of these key path values are the same, then 'sshtail usekey' may be more convenient.
     path: ~/.ssh/id_rsa
 ```
 
